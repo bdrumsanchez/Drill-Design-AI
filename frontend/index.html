@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drill Design AI</title>
+    <style>
+      /* ── Reset & Base ─────────────────────────────────────────────── */
+      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: #0b1120;
+        color: #e2e8f0;
+        overflow: hidden;
+      }
+
+      /* ── App Layout ───────────────────────────────────────────────── */
+      .app {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+      }
+
+      /* ── Sidebar ──────────────────────────────────────────────────── */
+      .sidebar {
+        width: 300px;
+        min-width: 300px;
+        background: #0f172a;
+        border-right: 1px solid #1e293b;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        overflow-y: auto;
+      }
+      .sidebar::-webkit-scrollbar { width: 4px; }
+      .sidebar::-webkit-scrollbar-track { background: transparent; }
+      .sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+      .sidebar-header {
+        padding: 24px 20px 16px;
+        border-bottom: 1px solid #1e293b;
+      }
+      .sidebar-header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        color: #f8fafc;
+      }
+      .sidebar-header span {
+        font-size: 12px;
+        color: #64748b;
+        display: block;
+        margin-top: 2px;
+      }
+
+      .controls {
+        padding: 16px 20px 24px;
+        flex: 1;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #94a3b8;
+        margin-bottom: 6px;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 14px;
+        font-family: inherit;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        color: #f1f5f9;
+        transition: border-color 0.15s, box-shadow 0.15s;
+        outline: none;
+      }
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+      }
+      .form-group input[type="number"] {
+        -moz-appearance: textfield;
+      }
+      .form-group input[type="number"]::-webkit-inner-spin-button {
+        opacity: 1;
+      }
+
+      .form-group select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 32px;
+      }
+
+      .form-group textarea {
+        resize: vertical;
+        min-height: 60px;
+        font-family: 'JetBrains Mono', 'Consolas', monospace;
+        font-size: 12px;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 12px;
+      }
+      .form-row .form-group {
+        flex: 1;
+      }
+
+      .shape-params {
+        border-top: 1px solid #1e293b;
+        padding-top: 16px;
+        margin-top: 8px;
+      }
+      .shape-params .params-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #475569;
+        margin-bottom: 12px;
+      }
+
+      .generate-btn {
+        width: 100%;
+        padding: 11px 16px;
+        margin-top: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .generate-btn:hover { background: #2563eb; }
+      .generate-btn:active { transform: scale(0.98); }
+
+      .toggle-btn {
+        width: 100%;
+        padding: 9px 16px;
+        margin-top: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: inherit;
+        background: transparent;
+        color: #94a3b8;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .toggle-btn:hover {
+        background: #1e293b;
+        border-color: #3b82f6;
+        color: #e2e8f0;
+      }
+
+      .section-mgr {
+        border-top: 1px solid #1e293b;
+        padding-top: 14px;
+        margin-top: 4px;
+      }
+      .section-mgr-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #475569;
+        margin-bottom: 10px;
+      }
+      .section-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 280px;
+        overflow-y: auto;
+        margin-bottom: 8px;
+      }
+      .section-list::-webkit-scrollbar { width: 3px; }
+      .section-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+      .section-row {
+        background: #1a2332;
+        border: 1px solid #263040;
+        border-radius: 5px;
+        padding: 6px 8px;
+      }
+      .srow-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      .srow-name {
+        font-size: 11px;
+        font-weight: 600;
+        color: #e2e8f0;
+      }
+      .srow-remove {
+        background: none;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0 2px;
+        border-radius: 3px;
+        transition: color 0.15s, background 0.15s;
+      }
+      .srow-remove:hover {
+        color: #ef4444;
+        background: rgba(239,68,68,0.1);
+      }
+      .srow-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .srow-controls select {
+        font-size: 10px;
+        padding: 3px 18px 3px 6px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 3px;
+        color: #cbd5e1;
+        font-family: inherit;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 4px center;
+        width: 62px;
+      }
+      .srow-controls .srow-count {
+        width: 42px;
+        font-size: 10px;
+        padding: 3px 4px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 3px;
+        color: #cbd5e1;
+        font-family: inherit;
+        text-align: center;
+      }
+      .srow-controls .srow-label {
+        width: 38px;
+        font-size: 10px;
+        padding: 3px 4px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 3px;
+        color: #cbd5e1;
+        font-family: inherit;
+        text-align: center;
+      }
+      .srow-count-label {
+        font-size: 9px;
+        color: #64748b;
+        white-space: nowrap;
+      }
+
+      .add-section-btn {
+        width: 100%;
+        padding: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: inherit;
+        background: transparent;
+        color: #64748b;
+        border: 1px dashed #334155;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .add-section-btn:hover {
+        background: #1e293b;
+        color: #94a3b8;
+        border-color: #475569;
+      }
+
+      .srow-color-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        border: 1.5px solid #334155;
+        cursor: pointer;
+        padding: 0;
+        position: relative;
+        flex-shrink: 0;
+        transition: border-color 0.1s;
+      }
+      .srow-color-btn:hover { border-color: #94a3b8; }
+      .srow-color-btn::after {
+        content: '';
+        position: absolute;
+        right: 2px;
+        bottom: 2px;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 4px solid rgba(255,255,255,0.75);
+      }
+
+      .srow-colors {
+        display: none;
+        grid-template-columns: repeat(13, 1fr);
+        gap: 3px;
+        margin-top: 6px;
+      }
+      .srow-colors.open { display: grid; }
+      .swatch {
+        aspect-ratio: 1;
+        border-radius: 3px;
+        border: 1.5px solid #334155;
+        cursor: pointer;
+        padding: 0;
+        outline: none;
+        transition: border-color 0.1s;
+      }
+      .swatch:hover { border-color: #94a3b8; z-index: 1; }
+      .swatch-active {
+        outline: 2px solid #fff;
+        outline-offset: 1px;
+        border-color: #fff;
+      }
+
+      .field-area {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0b1120;
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+      }
+      .field-wrapper {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .field-wrapper svg {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 4px;
+        box-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
+      }
+      .status-bar {
+        padding: 12px 20px;
+        border-top: 1px solid #1e293b;
+        font-size: 11px;
+        color: #475569;
+      }
+      .status-bar .dot { color: #22c55e; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
